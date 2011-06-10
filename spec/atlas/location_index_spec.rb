@@ -23,7 +23,7 @@ describe LocationIndex do
   end
 
   it "should find a location when word matchs exactly phonetically" do
-    @location_index.push location(:name => "word", :stored_phonetics => "PHONETIC")
+    @location_index.push location(:name => "word", :phonetics => "PHONETIC")
     @location_index.find("PHONETIC", :index => :phonetic).should == [ @location ]
   end
 

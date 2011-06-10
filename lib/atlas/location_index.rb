@@ -10,7 +10,7 @@ module Atlas
     end
 
     def push(location, attributes = {})
-      location = Location.from(location)
+      location = Location.from(location, attributes)
 
       @exact_index.push location.words, location
       @phonetic_index.push location.phonetics, location

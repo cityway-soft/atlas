@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 module Atlas
-  class Location # < ChouetteActiveRecord
-    # set_table_name :geocoder_locations
+  class Location
     extend ActiveSupport::Memoizable
 
-    # belongs_to :reference, :polymorphic => true
-    # belongs_to :zone
-
-    attr_accessor :name
-    attr_accessor :reference
+    attr_accessor :name, :reference
+    attr_accessor :words, :phonetics
     attr_accessor :zone
 
-    attr_accessor :stored_words, :stored_phonetics
+    def initialize(value_or_attributes, attributes = {})
+      self.attributes = 
+        self.class.extract_attributes(value_or_attributes).merge(attributes)
+      self.reference ||= value_or_attributes
+    end
 
-    def initialize(attributes = {})
+    def attributes=(attributes = {})
       attributes.each { |k,v| send "#{k}=", v }
     end
 
@@ -26,58 +26,42 @@ module Atlas
     end
     alias_method_chain :reference, :geocoding
 
-    def self.from(reference, attributes = {})
-      unless Location === reference
-        Location.new({:reference => reference}.update(attributes))
+    def self.from(value, attributes = {})
+      unless Location === value
+        Location.new(value, attributes)
       else
         unless attributes.empty?
-          reference = reference.dup
-          reference.attributes = attributes
+          value = value.dup
+          value.attributes = attributes
         end
 
-        reference
+        value
       end
     end
-
-    def reference_with_update=(reference)
-      # if ActiveRecord::Base === reference
-      #   self.reference_without_update = reference 
-      # end
-      if reference
-        self.name ||= reference_name(reference)
-        self.zone ||= reference_zone(reference)
-      end
-    end
-    alias_method_chain :reference=, :update
 
     def uid
-      # if reference_type
-      #   "#{self.reference_type}:#{self.reference_id}".hash
-      # else
+      if reference
+        reference.hash
+      else
         to_s.hash
-      # end
+      end
     end
     memoize :uid
 
-    def reference_name(reference)
-      reference.respond_to?(:name) ? reference.name : reference.to_s
-    end
+    def self.extract_attributes(value)
+      return value if Hash === value
 
-    def reference_zone(reference)
-      reference.respond_to?(:city) ? Zone.find_by_city(reference.city) : nil
-    end
-
-    def before_save
-      self.stored_words = Word.serialize(words)
-      self.stored_phonetics = Phonetic.serialize(phonetics)
+      {}.tap do |attributes|
+        if value.respond_to?(:name)
+          attributes[:name] = value.name 
+        else
+          attributes[:name] = value.to_s
+        end
+      end
     end
 
     def to_s
-      unless zone 
-        name
-      else
-        "#{name}, #{zone}"
-      end
+      zone ? "#{name}, #{zone}" : name
     end
 
     def eql(other)
@@ -86,22 +70,12 @@ module Atlas
     alias_method :==, :eql
 
     def words
-      unless stored_words.blank?
-        Word.unserialize(stored_words)
-      else
-        name.to_words
-      end
+      @words ||= name.to_words
     end
-    memoize :words
 
     def phonetics
-      unless stored_phonetics.blank?
-        Phonetic.unserialize(stored_phonetics)
-      else
-        words.collect(&:phonetics).flatten
-      end
+      @phonetics ||= words.collect(&:phonetics).flatten
     end
-    memoize :phonetics
 
     def zone_words
       zone ? zone.words : []
@@ -123,9 +97,10 @@ module Atlas
     # end
 
     def self.references(locations)
-      Location.find(locations, :include => "reference").sort_by do |location|
-        locations.index(location)
-      end.collect!(&:reference)
+      # Location.find(locations, :include => "reference").sort_by do |location|
+      #   locations.index(location)
+      # end
+      locations.collect!(&:reference)
     end
 
   end
