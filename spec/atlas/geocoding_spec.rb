@@ -127,26 +127,12 @@ describe Geocoding do
         mock(Location, :reference => "reference-#{n}") 
       end
       @geocoding.stub!(:locations).and_return(@locations)
-
       @references = @locations.collect(&:reference)
-      Location.stub!(:references).and_return(@references)
-    end
-    
-    it "should find locations with their references" do
-      Location.should_receive(:references).with(@locations).and_return(@references)
-      @geocoding.references
     end
 
     it "should return references associated to locations" do
       @geocoding.references.should == @references
     end
-
-    # it "should replace Road references with Address ones" do
-    #   @geocoding.stub!(:street_number).and_return(12)
-    #   Location.stub!(:references).and_return [ road = Road.new ]
-
-    #   @geocoding.references.should == [ Address.new(road, 12) ]
-    # end
 
   end
 

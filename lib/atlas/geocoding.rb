@@ -63,10 +63,7 @@ module Atlas
     memoize :locations
 
     def references
-      Location.references(locations).collect! do |reference|
-        # Road === reference ? Address.new(reference, street_number) : 
-        reference
-      end
+      locations.collect(&:reference)
     end
 
     def suggestions
